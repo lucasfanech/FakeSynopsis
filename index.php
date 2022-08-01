@@ -85,7 +85,7 @@
                         <button id="loadMovie" type="button" class="btn btn-primary" ></button>
                         <div id="displayMovie">
                             <h3>Movie Name:</h3>
-                            <h4>Director:</h4>
+                            <h4>Release Date:</h4>
                             <div id="moviePoster"></div>
                         </div>
                         <div id="movieError"></div>
@@ -127,15 +127,30 @@
             $('#prepareToConfig').html('<button id="goToConfig" type="button" class="btn btn-primary" id="configure">Configure</button>');
         }
     }
-    function loadMovie(){
-        // get a random movie name
-        var movieName = "Interstellar";
-        // get a random director
-        var director = "Christopher Nolan";
-        // get a random poster
-        var poster = "https://m.media-amazon.com/images/I/A1JVqNMI7UL._AC_SL1500_.jpg";
-        // set the movie name in the displayMovie div
-        $('#displayMovie').html('<h3>Movie Name: ' + movieName + '</h3><h4>Director: ' + director + '</h4><div id="moviePoster"><img src="' + poster + '" alt="poster"></div>');
+
+
+    function getTMDBMovie(){
+        // get random number between 1 an 50
+        var random = Math.floor(Math.random() * 50) + 1;
+        // get random popular movie from TMDB
+        $.ajax({
+            url: 'https://api.themoviedb.org/3/movie/top_rated?api_key=f284d86fabe6a583282b88a52798bdd6&language=en-US&page='+random,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                // get a random movie
+                var randomMovie = data.results[Math.floor(Math.random() * data.results.length)];
+                // get the movie name
+                var movieName = randomMovie.title;
+                // get the release date
+                var releaseDate = randomMovie.release_date;
+                // get the movie poster
+                var poster = "https://image.tmdb.org/t/p/w500" + randomMovie.poster_path;
+                // set the movie name in the displayMovie div
+                $('#displayMovie').html('<h3>Movie Name: ' + movieName + '</h3><h4>Release Date: ' + releaseDate + '</h4><div id="moviePoster"><img src="' + poster + '" alt="' + movieName + '"></div>');
+                }
+        });
+
     }
 
     // --- Players ---
@@ -218,12 +233,12 @@
         // if attempts is not 0
         if (attempts != 0) {
             // loadMovie
-            loadMovie();
+            getTMDBMovie();
             // Error message in MovieError div
             $('#movieError').html('<div class="alert alert-danger" role="alert">You have ' + attempts + ' attempts left</div>');
 
         } else {
-            loadMovie();
+            getTMDBMovie();
             // display score div
             $('#selectWords').show();
             // hide selectMovie div
