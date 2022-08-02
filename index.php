@@ -59,7 +59,7 @@
                                 <option>7</option>
                                 <option>8</option>
                                 <option>9</option>
-                                <option>10</option>
+                                <option>100</option>
                             </select>
 
                             <label for="exampleFormControlSelect1">Duration</label>
@@ -76,16 +76,27 @@
                                 <option>9</option>
                                 <option>10</option>
                             </select>
+
+                            <!-- Range of difficulty slide -->
+                            <label for="exampleFormControlSelect1">Difficulty</label>
+                            <div class="range-slider">
+                                <input id="difficultyValue" class="range-slider__range" type="range" value="1" min="1" max="100" step="1">
+                                <span id="difficultyInfo" class="range-slider__value">1 movie among the 20 most popular movies of today</span>
+                            </div>
+
+
                         </div>
                         <button id="submitParameters" class="btn btn-primary">Submit</button>
                     </div>
 
                     <div id="selectMovie" hidden>
                         <h3>Select a movie</h3>
-                        <button id="loadMovie" type="button" class="btn btn-primary" ></button>
+                        <button id="loadMovie" type="button" class="btn btn-primary" >Generate a movie</button>
+                        <button id="chooseMovie" type="button" class="btn btn-primary" disabled>Choose this movie</button>
                         <div id="displayMovie">
                             <h3>Movie Name:</h3>
                             <h4>Release Date:</h4>
+                            <h4 id="synopsisContent">Synopsis:</h4>
                             <div id="moviePoster"></div>
                         </div>
                         <div id="movieError"></div>
@@ -93,6 +104,9 @@
 
                     <div id="selectWords" hidden>
                         <h3>Select your words</h3>
+                        <button id="generateWords" type="button" class="btn btn-primary" >Generate words</button>
+                        <button id="chooseWords" type="button" class="btn btn-primary" disabled>Choose these words</button>
+                        <div id="wordsList"></div>
                     </div>
 
                     <div id="started" hidden>
@@ -117,6 +131,7 @@
     var players = [];
     var attempts = 3;
     var duration = "Unlimited";
+    var difficulty = 1;
     function checkIfPlayersExist() {
         // if players array is empty
         if (players.length == 0) {
@@ -129,10 +144,10 @@
     }
 
 
-    function getTMDBMovie(){
-        // get random number between 1 an 50
-        var random = Math.floor(Math.random() * 50) + 1;
-        // get random popular movie from TMDB
+    function getTMDBMovie(difficulty) {
+        // get random number between 1 an 50 depending on difficulty
+        var random = Math.floor(Math.random() * difficulty) + 1;
+        // get most rated movie
         $.ajax({
             url: 'https://api.themoviedb.org/3/movie/top_rated?api_key=f284d86fabe6a583282b88a52798bdd6&language=en-US&page='+random,
             type: 'GET',
@@ -146,8 +161,11 @@
                 var releaseDate = randomMovie.release_date;
                 // get the movie poster
                 var poster = "https://image.tmdb.org/t/p/w500" + randomMovie.poster_path;
+                // get the synopsis
+                var synopsis = randomMovie.overview;
                 // set the movie name in the displayMovie div
-                $('#displayMovie').html('<h3>Movie Name: ' + movieName + '</h3><h4>Release Date: ' + releaseDate + '</h4><div id="moviePoster"><img src="' + poster + '" alt="' + movieName + '"></div>');
+                $('#displayMovie').html('<h3>Movie Name: ' + movieName + '</h3><h4>Release Date: ' + releaseDate + '</h4><h4 id="synopsisContent">Synopsis: ' + synopsis + '</h4><div id="moviePoster"><img src="' + poster + '" alt="' + movieName + '"></div>');
+
                 }
         });
 
@@ -208,6 +226,14 @@
 
 
     // --- Parameters ---
+    // on change of difficulty slider
+    $('#difficultyValue').change(function () {
+        // get value of slider
+        difficulty = $(this).val();
+        // set value of difficultyInfo div
+        $('#difficultyInfo').html('1 movie among the '+20*difficulty+' most popular movies of today');
+    });
+
     // on click on submitParameters button
     $('#submitParameters').click(function () {
         // display selectMovie div
@@ -219,11 +245,17 @@
         attempts = $('#exampleFormControlSelect1').val();
         // get duration
         duration = $('#duration').val();
+        // get difficulty
+        difficulty = $('#difficultyValue').val();
+
     });
 
     // --- Select movie ---
     // on click on loadMovie button
     $('#loadMovie').click(function () {
+        // activate button chooseMovie
+        $('#chooseMovie').attr('disabled', false);
+
         // set attempts -1
         if (attempts == "Unlimited") {
             // nothing
@@ -233,17 +265,54 @@
         // if attempts is not 0
         if (attempts != 0) {
             // loadMovie
-            getTMDBMovie();
+            getTMDBMovie(difficulty);
             // Error message in MovieError div
             $('#movieError').html('<div class="alert alert-danger" role="alert">You have ' + attempts + ' attempts left</div>');
 
         } else {
-            getTMDBMovie();
+            getTMDBMovie(difficulty);
             // display score div
             $('#selectWords').show();
             // hide selectMovie div
             $('#selectMovie').hide();
         }
+    });
+
+    // on click on chooseMovie button
+    $('#chooseMovie').click(function () {
+        // display selectWords div
+        $('#selectWords').show();
+        // hide selectMovie div
+        $('#selectMovie').hide();
+    });
+
+    // on click on generateWords button
+    $('#generateWords').click(function () {
+        // get movie synopsis
+        var synopsis = $('#synopsisContent').html();
+        // put into array all words in synopsis (split by space) and remove all punctuation marks and numbers (replace with '') and lowercase all words (toLowerCase) and remove empty words (if length is 0) and remove duplicates (if length is 1) and remove words with length less than 5 characters (if length is less than 5) and remove the word 'synopsis word
+       var originalWords = synopsis.split(' ').map(function (word) {
+            return word.replace(/[^a-zA-Z]/g, '').toLowerCase();
+        }).filter(function (word) {
+            return word.length > 4;
+        }).filter(function (word) {
+            return word != 'synopsis';
+        }).filter(function (word) {
+            return word.length > 1;
+        }).filter(function (word) {
+            return word != '';
+        });
+        // activate button chooseWords
+        $('#chooseWords').attr('disabled', false);
+
+        // set words in wordsList div
+        $('#wordsList').html('');
+        // for each word in words array
+        for (var i = 0; i < originalWords.length; i++) {
+            // add word to wordsList div
+            $('#wordsList').append('<div class="word" id="word'+i+'"><span class="wordName">' + originalWords[i] + '</span>');
+        }
+
     });
 
 
