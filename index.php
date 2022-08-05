@@ -132,6 +132,8 @@
     var attempts = 3;
     var duration = "Unlimited";
     var difficulty = 1;
+    var generatedWordsNumber = 0;
+    var relatedWords = [];
     function checkIfPlayersExist() {
         // if players array is empty
         if (players.length == 0) {
@@ -168,6 +170,37 @@
 
                 }
         });
+
+    }
+
+    function getRelatedWords(originalWords){
+        // array relatedWords will contain the words and score
+        var getRelatedWords = [];
+        for (var i = 0; i < originalWords.length; i++) {
+            // get the word
+            var word = originalWords[i];
+            // get the word's synonyms
+            $.ajax({
+                url: 'https://api.datamuse.com/words?rel_jjb=' + word,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // loop through the data
+                    for (var j = 0; j < data.length; j++) {
+                        // get the word
+                        var word = data[j].word;
+                        // get the score
+                        var score = data[j].score;
+                        // if the word is not already in the array
+                        if (getRelatedWords.indexOf(word) == -1) {
+                            // push the word and its score in two dimensionnal array
+                            getRelatedWords.push([word, score]);
+                        }
+                    }
+                }
+            });
+        }
+        return getRelatedWords;
 
     }
 
@@ -288,10 +321,13 @@
 
     // on click on generateWords button
     $('#generateWords').click(function () {
+
         // get movie synopsis
         var synopsis = $('#synopsisContent').html();
+        // append synopsis to wordsList div
+        $('#wordsList').append('<div class="word" id="word10"><span class="wordName">' + synopsis + '</span></div>');
         // put into array all words in synopsis (split by space) and remove all punctuation marks and numbers (replace with '') and lowercase all words (toLowerCase) and remove empty words (if length is 0) and remove duplicates (if length is 1) and remove words with length less than 5 characters (if length is less than 5) and remove the word 'synopsis word
-       var originalWords = synopsis.split(' ').map(function (word) {
+        var originalWords = synopsis.split(' ').map(function (word) {
             return word.replace(/[^a-zA-Z]/g, '').toLowerCase();
         }).filter(function (word) {
             return word.length > 4;
@@ -304,16 +340,28 @@
         });
         // activate button chooseWords
         $('#chooseWords').attr('disabled', false);
-
-        // set words in wordsList div
-        $('#wordsList').html('');
-        // for each word in words array
-        for (var i = 0; i < originalWords.length; i++) {
-            // add word to wordsList div
-            $('#wordsList').append('<div class="word" id="word'+i+'"><span class="wordName">' + originalWords[i] + '</span>');
+        if (generatedWordsNumber == 0) {
+            relatedWords = getRelatedWords(originalWords);
         }
+        let p = new Promise(resolve => {
+            // get elements from a file or over the network
+            // or the simplest is to just set a small timeout
+            resolve(relatedWords);
+        });
 
-    });
+        p.then(arr => {
+            if (arr.length > 0) {
+                // loop over arr
+                // set words in wordsList div
+                // for each word in words array
+                for (var i = 0; i < 10; i++) {
+                    // add word to wordsList div
+                    $('#wordsList').append('<div class="word" id="word'+i+'"><span class="wordName">' + relatedWords[i][0] + '</span></div>');
+                }
+            }
+        });
+        generatedWordsNumber++;
+       });
 
 
 
