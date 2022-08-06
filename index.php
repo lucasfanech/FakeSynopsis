@@ -134,6 +134,8 @@
     var difficulty = 1;
     var generatedWordsNumber = 0;
     var relatedWords = [];
+
+
     function checkIfPlayersExist() {
         // if players array is empty
         if (players.length == 0) {
@@ -342,24 +344,36 @@
         $('#chooseWords').attr('disabled', false);
         if (generatedWordsNumber == 0) {
             relatedWords = getRelatedWords(originalWords);
-        }
-        let p = new Promise(resolve => {
-            // get elements from a file or over the network
-            // or the simplest is to just set a small timeout
-            resolve(relatedWords);
-        });
-
-        p.then(arr => {
-            if (arr.length > 0) {
-                // loop over arr
-                // set words in wordsList div
-                // for each word in words array
+            console.log(relatedWords);
+            // wait for ajax request to be finished
+            setTimeout(function () {
+                // sort words by score
+                relatedWords.sort(function (a, b) {
+                    return b[1] - a[1];
+                });
+                console.log(relatedWords);
+                // for each word in relatedWords
                 for (var i = 0; i < 10; i++) {
-                    // add word to wordsList div
-                    $('#wordsList').append('<div class="word" id="word'+i+'"><span class="wordName">' + relatedWords[i][0] + '</span></div>');
+                    // get word
+                    var word = relatedWords[i][0];
+                    // get score
+                    var score = relatedWords[i][1];
+                    // if word is not already in wordsList
+                    if ($('#wordsList').find('#word' + i).length == 0) {
+                        // append word to wordsList
+                        $('#wordsList').append('<div class="word" id="word' + i + '"><span class="wordName">' + word + '</span><span class="wordScore">' + score + '</span></div>');
+                    }
                 }
-            }
-        });
+                // set generatedWordsNumber to the number of words in wordsList
+                generatedWordsNumber = $('#wordsList').children().length;
+            }, 1000);
+        }
+        else{
+            // empty wordsList
+            $('#wordsList').empty();
+
+        }
+
         generatedWordsNumber++;
        });
 
